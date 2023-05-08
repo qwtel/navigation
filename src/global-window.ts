@@ -51,10 +51,11 @@ export interface WindowLike {
             state: object
         }
     }
-    addEventListener(type: "submit", fn: (event: SubmitEventPrototype) => void): void;
-    addEventListener(type: "click", fn: (event: MouseEventPrototype) => void): void;
     addEventListener(type: "popstate", fn: (event: PopStateEventPrototype) => void): void;
-    document?: unknown
+    document: {
+        addEventListener(type: "submit", fn: (event: SubmitEventPrototype) => void): void;
+        addEventListener(type: "click", fn: (event: MouseEventPrototype) => void): void;
+    }
 }
 
 declare var window: WindowLike | undefined;

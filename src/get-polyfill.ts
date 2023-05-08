@@ -290,7 +290,7 @@ function getNavigationOnlyPolyfill(givenNavigation?: Navigation) {
 function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
   function clickCallback(ev: MouseEventPrototype, aEl: HTMLAnchorElementPrototype) {
     // console.log("<-- clickCallback -->");
-    queueMicrotask(process);
+    process();
 
     function process() {
       if (!isAppNavigation(ev)) return;
@@ -306,7 +306,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
   }
   function submitCallback(ev: SubmitEventPrototype, form: HTMLFormElementPrototype) {
     // console.log("<-- submitCallback -->");
-    queueMicrotask(process);
+    process();
 
     function process() {
       if (ev.defaultPrevented) return;
@@ -353,7 +353,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
     }
   }
   // console.log("click event added")
-  window.addEventListener("click", (ev: MouseEventPrototype) => {
+  window.document.addEventListener("click", (ev: MouseEventPrototype) => {
     // console.log("click event", ev)
     if (ev.target?.ownerDocument === window.document) {
       const aEl = matchesAncestor(ev.target, "a[href]"); // XXX: not sure what <a> tags without href do
@@ -362,7 +362,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
       }
     }
   });
-  window.addEventListener("submit", (ev: SubmitEventPrototype) => {
+  window.document.addEventListener("submit", (ev: SubmitEventPrototype) => {
     // console.log("submit event")
     if (ev.target?.ownerDocument === window.document) {
       const form: unknown = matchesAncestor(ev.target, "form");
