@@ -290,8 +290,7 @@ function getNavigationOnlyPolyfill(givenNavigation?: Navigation) {
 function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
   function clickCallback(ev: MouseEventPrototype, aEl: HTMLAnchorElementPrototype) {
     // console.log("<-- clickCallback -->");
-    // TODO opt into queueMicrotask before process
-    process();
+    queueMicrotask(process);
 
     function process() {
       if (!isAppNavigation(ev)) return;
@@ -307,8 +306,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
   }
   function submitCallback(ev: SubmitEventPrototype, form: HTMLFormElementPrototype) {
     // console.log("<-- submitCallback -->");
-    // TODO opt into queueMicrotask before process
-    process();
+    queueMicrotask(process);
 
     function process() {
       if (ev.defaultPrevented) return;
