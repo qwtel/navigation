@@ -735,12 +735,12 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
 }
 
 function isAppNavigation(evt: MouseEventPrototype) {
-  return evt instanceof PointerEvent || (evt.button === 0 &&
+  return evt.button === 0 &&
     !evt.defaultPrevented &&
     !evt.metaKey &&
     !evt.altKey &&
     !evt.ctrlKey &&
-    !evt.shiftKey)
+    !evt.shiftKey
 }
 
 /** Checks if this element or any of its parents matches a given `selector` */
