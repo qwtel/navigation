@@ -70,9 +70,7 @@ const cwd = resolve(dirname(pathname), "..")
   });
   await bundle.write({
     sourcemap: true,
-    output: {
-      file: "./esnext/rollup.js",
-    },
+    file: "./esnext/rollup.js",
     inlineDynamicImports: true,
     format: "esm",
     interop: "auto",
@@ -168,7 +166,7 @@ if (!process.env.NO_COVERAGE_BADGE_UPDATE) {
   )
 
   badges.push(
-      '### Test Coverage\n\n',
+      '<details><summary>Test Coverage</summary>\n\n',
       // `![nycrc config on GitHub](https://img.shields.io/nycrc/${name.replace(/^@/, "")})`
   )
 
@@ -192,6 +190,8 @@ if (!process.env.NO_COVERAGE_BADGE_UPDATE) {
         `![${message} ${name} covered](https://img.shields.io/badge/${name}-${message}-${color})`
     );
   }
+
+  badges.push("\n\n</details>");
 
   const tag = "[//]: # (badges)";
 
@@ -242,6 +242,44 @@ if (!process.env.NO_COVERAGE_BADGE_UPDATE) {
   }
 
   await rollupReplacements("esnext/polyfill-rollup.js");
+
+  await fs.cp("esnext/rollup.js", "esnext/rollup-input.cjs");
+
+  await rollupReplacements("esnext/rollup-input.cjs");
+
+
+  {
+
+    const bundle = await rollup({
+      input: "./esnext/rollup-input.cjs",
+      plugins: [
+        ignore([
+          `${cwd}/esnext/tests/navigation.playwright.js`,
+          `${cwd}/esnext/tests/navigation.playwright.wpt.js`,
+          `${cwd}/esnext/tests/dependencies-input.js`,
+          `${cwd}/esnext/tests/dependencies.js`,
+        ]),
+        nodeResolve()
+      ],
+      inlineDynamicImports: true,
+      treeshake: {
+        preset: "smallest",
+        moduleSideEffects: "no-external"
+      }
+    });
+    await bundle.write({
+      sourcemap: true,
+      file: "./esnext/rollup.cjs",
+      inlineDynamicImports: true,
+      format: "cjs",
+      interop: "esModule",
+      globals: {
+
+      }
+    });
+  }
+
+  await fs.rm("./esnext/rollup-input.cjs");
 
   await fs.cp("esnext/polyfill-rollup.js", "example/polyfill-rollup.js");
   await fs.cp("esnext/routes-rollup.js", "example/routes-rollup.js");

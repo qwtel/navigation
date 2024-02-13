@@ -1,6 +1,6 @@
 {
   "name": "@virtualstate/navigation",
-  "version": "1.0.1-alpha.192",
+  "version": "1.0.1-alpha.199",
   "main": "./esnext/index.js",
   "module": "./esnext/index.js",
   "types": "./esnext/index.d.ts",
@@ -38,11 +38,17 @@
       ],
       "await": [
         "./esnext/await/index.d.ts"
+      ],
+      "dynamic": [
+        "./esnext/dynamic/index.d.ts"
       ]
     }
   },
   "exports": {
-    ".": "./esnext/index.js",
+    ".": {
+      "require": "./esnext/rollup.cjs",
+      "import": "./esnext/index.js"
+    },
     "./event-target": "./esnext/event-target/async-event-target.js",
     "./event-target/async": "./esnext/event-target/async-event-target.js",
     "./event-target/sync": "./esnext/event-target/sync-event-target.js",
@@ -57,7 +63,11 @@
     "./routes": "./esnext/routes/index.js",
     "./state": "./esnext/state/index.js",
     "./await": "./esnext/await/index.js",
-    "./rollup": "./esnext/rollup.js"
+    "./dynamic": "./esnext/dynamic/index.js",
+    "./rollup": {
+      "require": "./esnext/rollup.cjs",
+      "import": "./esnext/rollup.js"
+    }
   },
   "repository": {
     "type": "git",
@@ -72,7 +82,6 @@
   "dependencies": {
     "@ungap/structured-clone": "^1.0.2",
     "@virtualstate/composite-key": "^1.0.0",
-    "abort-controller": "^3.0.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -83,7 +92,6 @@
     "@rollup/plugin-node-resolve": "^13.1.1",
     "@rollup/plugin-typescript": "^8.3.0",
     "@types/chance": "^1.1.3",
-    "@types/jest": "^27.0.1",
     "@types/mkdirp": "^1.0.2",
     "@types/node": "^18.14.1",
     "@types/rimraf": "^3.0.2",
@@ -91,7 +99,7 @@
     "@types/whatwg-url": "^8.2.1",
     "@virtualstate/focus": "^1.4.9",
     "@virtualstate/kdl": "^1.0.1-alpha.32",
-    "@virtualstate/promise": "^1.2.1",
+    "@virtualstate/promise": "^1.3.4",
     "@virtualstate/union": "^2.48.1",
     "c8": "^7.11.3",
     "chance": "^1.1.8",
@@ -99,20 +107,17 @@
     "core-js": "^3.17.2",
     "dom-lite": "^20.2.0",
     "filehound": "^1.17.4",
-    "jest": "^27.1.0",
-    "jest-playwright-preset": "^1.7.0",
     "mkdirp": "^1.0.4",
     "playwright": "^1.25.2",
     "rimraf": "^3.0.2",
     "rollup": "^2.61.1",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-ignore": "^1.0.10",
-    "ts-jest": "^27.0.5",
     "ts-node": "^10.2.1",
     "typescript": "^4.9.5",
-    "urlpattern-polyfill": "^1.0.0-rc2",
+    "urlpattern-polyfill": "^8.0.2",
     "v8-to-istanbul": "^8.1.0",
-    "wpt": "https://github.com/web-platform-tests/wpt.git#86d251acc8f2176cda0177e900f551d939de5c8f"
+    "wpt": "https://github.com/web-platform-tests/wpt.git#b12ab0e21743953c5919daf361455dd5c7df7a43"
   },
   "scripts": {
     "build": "rm -rf esnext && tsc",

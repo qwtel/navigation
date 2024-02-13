@@ -450,15 +450,10 @@ function ok$1(value) {
 
 const GlobalAbortController = typeof AbortController !== "undefined" ? AbortController : undefined;
 
-// import ImportedAbortController from "abort-controller";
-// async function importAbortController() {
-//     const { default: AbortController } = await import("abort-controller");
-//     return AbortController;
-// }
 if (!GlobalAbortController) {
     throw new Error("AbortController expected to be available or polyfilled");
 }
-const AbortController$1 = GlobalAbortController; // await importAbortController();
+const AbortController$1 = GlobalAbortController;
 
 function isPromise(value) {
     return (like(value) &&
@@ -540,7 +535,8 @@ class NavigationTransition extends EventTarget {
         return this.#options[NavigationTransitionInitialIndex];
     }
     get [NavigationTransitionCommitIsManual]() {
-        return !!this[NavigationTransitionInterceptOptionsCommit]?.includes("manual");
+        return !!(this[NavigationTransitionInterceptOptionsCommit]?.includes("after-transition") ||
+            this[NavigationTransitionInterceptOptionsCommit]?.includes("manual"));
     }
     [NavigationTransitionFinishedEntries];
     [NavigationTransitionFinishedIndex];
@@ -2280,7 +2276,7 @@ function interceptWindowClicks(navigation, window) {
     window.addEventListener("click", (ev) => {
         // console.log("click event", ev)
         if (ev.target?.ownerDocument === window.document) {
-            const aEl = matchesAncestor(ev.target, "a[href]"); // XXX: not sure what <a> tags without href do
+            const aEl = getAnchorFromEvent(ev); // XXX: not sure what <a> tags without href do
             if (like(aEl)) {
                 clickCallback(ev, aEl);
             }
@@ -2289,12 +2285,25 @@ function interceptWindowClicks(navigation, window) {
     window.addEventListener("submit", (ev) => {
         // console.log("submit event")
         if (ev.target?.ownerDocument === window.document) {
-            const form = matchesAncestor(ev.target, "form");
+            const form = getFormFromEvent(ev);
             if (like(form)) {
                 submitCallback(ev, form);
             }
         }
     });
+}
+function getAnchorFromEvent(event) {
+    return matchesAncestor(getComposedPathTarget(event), "a[href]:not([data-navigation-ignore])");
+}
+function getFormFromEvent(event) {
+    return matchesAncestor(getComposedPathTarget(event), "form:not([data-navigation-ignore])");
+}
+function getComposedPathTarget(event) {
+    if (!event.composedPath) {
+        return event.target;
+    }
+    const targets = event.composedPath();
+    return targets[0] ?? event.target;
 }
 function patchGlobalScope(window, history, navigation) {
     patchGlobals();
@@ -2537,6 +2546,50 @@ function getCompletePolyfill(options = DEFAULT_POLYFILL_OPTIONS) {
             if (HISTORY_INTEGRATION) {
                 const ignorePopState = new Set();
                 const ignoreCurrentEntryChange = new Set();
+                navigation.addEventListener("navigate", event => {
+                    if (event.destination.sameDocument) {
+                        return;
+                    }
+                    // If the destination is not the same document, we are navigating away
+                    event.intercept({
+                        // Set commit after transition... and never commit!
+                        commit: "after-transition",
+                        async handler() {
+                            // Let other tasks do something and abort if needed
+                            queueMicrotask(() => {
+                                if (event.signal.aborted)
+                                    return;
+                                submit();
+                            });
+                        }
+                    });
+                    function submit() {
+                        if (like(event.originalEvent)) {
+                            const anchor = getAnchorFromEvent(event.originalEvent);
+                            if (anchor) {
+                                return submitAnchor(anchor);
+                            }
+                            else {
+                                const form = getFormFromEvent(event.originalEvent);
+                                if (form) {
+                                    return submitForm(form);
+                                }
+                            }
+                        }
+                        // Assumption that navigation event means to navigate...
+                        location.href = event.destination.url;
+                    }
+                    function submitAnchor(element) {
+                        const cloned = element.cloneNode();
+                        cloned.setAttribute("data-navigation-ignore", "1");
+                        cloned.click();
+                    }
+                    function submitForm(element) {
+                        const cloned = element.cloneNode();
+                        cloned.setAttribute("data-navigation-ignore", "1");
+                        cloned.submit();
+                    }
+                });
                 navigation.addEventListener("currententrychange", ({ navigationType, from }) => {
                     // console.log("<-- currententrychange event listener -->");
                     const { currentEntry } = navigation;
@@ -2547,7 +2600,7 @@ function getCompletePolyfill(options = DEFAULT_POLYFILL_OPTIONS) {
                         return;
                     const historyState = getNavigationEntryWithMeta(navigation, currentEntry, patchLimit);
                     // console.log("currentEntry change", historyState);
-                    switch (navigationType) {
+                    switch (navigationType || "replace") {
                         case "push":
                             return pushState(historyState, "", url);
                         case "replace":
@@ -2599,6 +2652,11 @@ function getCompletePolyfill(options = DEFAULT_POLYFILL_OPTIONS) {
             }
             if (PATCH_HISTORY) {
                 patchGlobalScope(window, history, navigation);
+            }
+            if (!history.state) {
+                // Initialise history state if not available
+                const historyState = getNavigationEntryWithMeta(navigation, navigation.currentEntry, patchLimit);
+                replaceState(historyState, "", navigation.currentEntry.url);
             }
         }
     };

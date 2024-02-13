@@ -11,7 +11,7 @@ import { stringify, parse } from './util/structured-json';
 import {NavigationHistory} from "./history";
 import {like, ok} from "./is";
 import {
-  ElementPrototype,
+  ElementPrototype, EventPrototype,
   globalWindow,
   HTMLAnchorElementPrototype,
   HTMLFormElementPrototype,
@@ -356,7 +356,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
   window.document.addEventListener("click", (ev: MouseEventPrototype) => {
     // console.log("click event", ev)
     if (ev.target?.ownerDocument === window.document) {
-      const aEl = matchesAncestor(ev.target, "a[href]"); // XXX: not sure what <a> tags without href do
+      const aEl = getAnchorFromEvent(ev); // XXX: not sure what <a> tags without href do
       if (like<HTMLAnchorElementPrototype>(aEl)) {
         clickCallback(ev, aEl);
       }
@@ -365,12 +365,28 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
   window.document.addEventListener("submit", (ev: SubmitEventPrototype) => {
     // console.log("submit event")
     if (ev.target?.ownerDocument === window.document) {
-      const form: unknown = matchesAncestor(ev.target, "form");
+      const form: unknown = getFormFromEvent(ev);
       if (like<HTMLFormElementPrototype>(form)) {
         submitCallback(ev, form);
       }
     }
   });
+}
+
+function getAnchorFromEvent(event: EventPrototype) {
+  return matchesAncestor(getComposedPathTarget(event), "a[href]:not([data-navigation-ignore])");
+}
+
+function getFormFromEvent(event: EventPrototype) {
+  return matchesAncestor(getComposedPathTarget(event), "form:not([data-navigation-ignore])");
+}
+
+function getComposedPathTarget(event: EventPrototype) {
+  if (!event.composedPath) {
+    return event.target;
+  }
+  const targets = event.composedPath();
+  return targets[0] ?? event.target;
 }
 
 function patchGlobalScope(window: WindowLike, history: NavigationHistory<object>, navigation: Navigation) {
@@ -659,6 +675,55 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
         const ignorePopState = new Set<string>();
         const ignoreCurrentEntryChange = new Set<string>();
 
+        navigation.addEventListener("navigate", event => {
+          if (event.destination.sameDocument) {
+            return;
+          }
+
+          // If the destination is not the same document, we are navigating away
+          event.intercept({
+            // Set commit after transition... and never commit!
+            commit: "after-transition",
+            async handler() {
+              // Let other tasks do something and abort if needed
+              queueMicrotask(() => {
+                if (event.signal.aborted) return;
+                submit();
+              })
+            }
+          });
+
+          function submit() {
+            if (like<EventPrototype>(event.originalEvent)) {
+              const anchor = getAnchorFromEvent(event.originalEvent);
+              if (anchor) {
+                return submitAnchor(anchor);
+              } else {
+                const form = getFormFromEvent(event.originalEvent);
+                if (form) {
+                  return submitForm(form);
+                }
+              }
+            }
+            // Assumption that navigation event means to navigate...
+            location.href = event.destination.url;
+          }
+
+          function submitAnchor(element: ElementPrototype) {
+            const cloned = element.cloneNode();
+            cloned.setAttribute("data-navigation-ignore", "1");
+            cloned.click();
+          }
+
+          function submitForm(element: ElementPrototype) {
+            const cloned = element.cloneNode();
+            cloned.setAttribute("data-navigation-ignore", "1");
+            cloned.submit();
+          }
+
+
+        });
+
         navigation.addEventListener("currententrychange", ({ navigationType, from }) => {
           // console.log("<-- currententrychange event listener -->");
           const { currentEntry } = navigation;
@@ -670,7 +735,7 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
 
           // console.log("currentEntry change", historyState);
 
-          switch (navigationType) {
+          switch (navigationType || "replace") {
             case "push":
               return pushState(historyState, "", url)
             case "replace":
@@ -729,6 +794,12 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
 
       if (PATCH_HISTORY) {
         patchGlobalScope(window, history, navigation);
+      }
+
+      if (!history.state) {
+        // Initialise history state if not available
+        const historyState = getNavigationEntryWithMeta(navigation, navigation.currentEntry, patchLimit);
+        replaceState(historyState, "", navigation.currentEntry.url);
       }
     }
   };
