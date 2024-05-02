@@ -23,6 +23,8 @@ import {v4} from "./util/uuid-or-random";
 import {NavigationHistoryEntrySerialized} from "./navigation-entry";
 
 export interface NavigationPolyfillOptions {
+  history?: NavigationHistory<object>;
+
   /**
    * Integrate polyfilled Navigation API with legacy History API.
    * Specifically, `popstate` will trigger navigation traversal and
@@ -34,8 +36,7 @@ export interface NavigationPolyfillOptions {
    * `hashchange` not implemented (but might work anyway for most cases with {@link INTERCEPT_EVENTS}?).
    * `scroll` not implemented.
    */
-  history?: boolean | NavigationHistory<object>;
-
+  historyIntegration?: boolean;
 
   /**
    * Persists all navigation entries in history state.
@@ -55,7 +56,7 @@ export interface NavigationPolyfillOptions {
   /**
    * Like {@link NavigationPolyfillOptions.limit}, except also stores the state for each navigation entry.
    * Note that you might not need this if you only need the state of the current navigation entry,
-   * which works with {@link NavigationPolyfillOptions.history} alone.
+   * which works with {@link NavigationPolyfillOptions.historyIntegration} alone.
    * Enabling this allows retrieving the state of *any navigation entry even after a hard refresh*.
    *
    * __WIP__: State is stringified and stored in `sessionStorage`. This works for small objects,
@@ -243,7 +244,7 @@ function getHistoryState<T extends object>(
 export const DEFAULT_POLYFILL_OPTIONS: NavigationPolyfillOptions = Object.freeze({
   persist: true,
   persistState: true,
-  history: true,
+  historyIntegration: true,
   limit: 50,
   patch: true,
   interceptEvents: true
@@ -542,6 +543,7 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
     persist: PERSIST_ENTRIES,
     persistState: PERSIST_ENTRIES_STATE,
     history: givenHistory,
+    historyIntegration,
     limit: patchLimit,
     patch: PATCH_HISTORY,
     interceptEvents: INTERCEPT_EVENTS,
@@ -562,8 +564,8 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
 
   const window = givenWindow ?? globalWindow;
 
-  const history = options.history && typeof options.history !== "boolean" ?
-      options.history :
+  const history = givenHistory ?
+      givenHistory :
       getWindowHistory(window);
 
   if (!history) {
@@ -589,7 +591,7 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
   }
   let initialEntries: NavigationHistoryEntrySerialized[] = initialMeta.entries;
 
-  const HISTORY_INTEGRATION = !!((givenWindow || givenHistory) && history);
+  const HISTORY_INTEGRATION = !!(givenHistory ?? historyIntegration);
 
   if (!initialEntries.length) {
     let url: string | undefined = undefined;
