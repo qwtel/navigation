@@ -5,6 +5,7 @@
   "module": "./esnext/index.js",
   "types": "./esnext/index.d.ts",
   "type": "module",
+  "sideEffects": false,
   "keywords": [
     "app history",
     "app-history",
