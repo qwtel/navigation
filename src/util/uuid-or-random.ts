@@ -12,23 +12,22 @@ const fakeUUID = {
 }
 
 async function getImportUUIDOrNodeRandomUUID() {
-    // const { v4 } = await import("./import-uuid")
-    //     // .catch(async () => {
-    //     //     // @ts-ignore
-    //     //     const crypto: Crypto = await import("node:crypto");
-    //     //     return {
-    //     //         v4() {
-    //     //             return crypto.randomUUID()
-    //     //         }
-    //     //     }
-    //     // })
-    //     // .catch(async () => import("uuid"))
-    //     .catch(() => undefined)
-    //     .then(
-    //         (mod) =>
-    //             mod ?? fakeUUID
-    //     );
-    const v4 = 'crypto' in globalThis && 'randomUUID' in crypto ? crypto.randomUUID.bind(crypto) : fakeUUID
+    const { v4 } = await import("./import-uuid")
+        .catch(async () => {
+            // @ts-ignore
+            const crypto: Crypto = await import("node:crypto");
+            return {
+                v4() {
+                    return crypto.randomUUID()
+                }
+            }
+        })
+        .catch(async () => import("uuid"))
+        .catch(() => undefined)
+        .then(
+            (mod) =>
+                mod ?? fakeUUID
+        );
     return { v4 };
 }
 
