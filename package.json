@@ -1,6 +1,6 @@
 {
   "name": "@virtualstate/navigation",
-  "version": "1.0.1-alpha.202",
+  "version": "1.0.1-alpha.205",
   "main": "./esnext/index.js",
   "module": "./esnext/index.js",
   "types": "./esnext/index.d.ts",
@@ -86,8 +86,7 @@
   "license": "MIT",
   "dependencies": {
     "@ungap/structured-clone": "^1.0.2",
-    "@virtualstate/composite-key": "^1.0.0",
-    "uuid": "^8.3.2"
+    "@virtualstate/composite-key": "^1.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.15.4",
@@ -100,7 +99,6 @@
     "@types/mkdirp": "^1.0.2",
     "@types/node": "^18.14.1",
     "@types/rimraf": "^3.0.2",
-    "@types/uuid": "^8.3.3",
     "@types/whatwg-url": "^8.2.1",
     "@virtualstate/focus": "^1.4.9",
     "@virtualstate/kdl": "^1.0.1-alpha.32",
@@ -119,7 +117,7 @@
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-ignore": "^1.0.10",
     "ts-node": "^10.2.1",
-    "typescript": "^4.9.5",
+    "typescript": "^5.4.5",
     "urlpattern-polyfill": "^8.0.2",
     "v8-to-istanbul": "^8.1.0",
     "wpt": "https://github.com/web-platform-tests/wpt.git#b12ab0e21743953c5919daf361455dd5c7df7a43"
