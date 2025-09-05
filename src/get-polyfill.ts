@@ -142,7 +142,7 @@ function disposeHistoryState<T extends object>(
   sessionStorage.removeItem(entry.key)
 }
 
-function getEntries(navigation: Navigation, limit: number = DEFAULT_POLYFILL_OPTIONS.limit): NavigationHistoryEntrySerialized[] {
+function getEntries<T>(navigation: Navigation<T>, limit = DEFAULT_POLYFILL_OPTIONS.limit): NavigationHistoryEntrySerialized[] {
   let entries = navigation.entries();
   if (typeof limit === "number") {
     entries = entries.slice(-limit);
@@ -198,7 +198,7 @@ function setHistoryState<T extends object>(
 function getHistoryState<T extends object>(
     history: NavigationHistory<T> & { originalState?: T },
     entry: NavigationHistoryEntry<T>
-): T {
+): T|undefined {
   return (
       getStateFromHistoryIfMatchingKey() ??
       getStateFromSession()
@@ -326,7 +326,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
       } catch {
         // For runtimes where we polyfilled the window & then evented it
         // ... for some reason
-        formData = new FormData(undefined)
+        formData = new FormData(undefined as unknown as HTMLFormElementPrototype)
       }
       /* c8 ignore end */
       const params = method === 'get'
@@ -338,7 +338,7 @@ function interceptWindowClicks(navigation: Navigation, window: WindowLike) {
       // action is always a fully qualified url in browsers
       const url = new URL(
           action,
-          navigation.currentEntry.url
+          navigation.currentEntry!.url
       );
       if (params)
         url.search = params.toString();
@@ -523,7 +523,7 @@ function patchGlobalScope(window: WindowLike, history: NavigationHistory<object>
         "state", {
           ...descriptor,
           get() {
-            const original: unknown = descriptor.get.call(this);
+            const original: unknown = descriptor!.get!.call(this);
             if (!isStateHistoryWithMeta(original)) return original;
             return original[NavigationKey].state;
           }
@@ -560,7 +560,7 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
   //   ...options
   // })
 
-  const IS_PERSIST = PERSIST_ENTRIES || PERSIST_ENTRIES_STATE;
+  const IS_PERSIST = !!(PERSIST_ENTRIES || PERSIST_ENTRIES_STATE);
 
   const window = givenWindow ?? globalWindow;
 
@@ -800,8 +800,8 @@ export function getCompletePolyfill(options: NavigationPolyfillOptions = DEFAULT
 
       if (!history.state) {
         // Initialise history state if not available
-        const historyState = getNavigationEntryWithMeta(navigation, navigation.currentEntry, patchLimit);
-        replaceState(historyState, "", navigation.currentEntry.url);
+        const historyState = getNavigationEntryWithMeta(navigation, navigation.currentEntry!, patchLimit);
+        replaceState(historyState, "", navigation.currentEntry!.url);
       }
     }
   };

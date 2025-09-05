@@ -8,7 +8,7 @@ export {
   NavigationFormData,
   NavigationCanIntercept,
   NavigationUserInitiated,
-  NavigationNavigateOptions,
+  type NavigationNavigateOptions,
 } from "./create-navigation-transition";
 export * from "./transition";
 export * from "./event-target/intercept-event";
